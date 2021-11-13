@@ -1,4 +1,26 @@
 import re
+import numpy as np
+
+def get_xy(m):
+    for x in range(1, xmax + 1):
+        for y in range(1, ymax + 1):
+            if get_m(x, y) == m:
+                return x, y
+    return 0, 0
+
+def best_move(x0, y0, v0):
+    nmax, xm, ym = 0, 0, 0
+    for x in range(1, xmax + 1):
+        for y in range(1, ymax + 1):
+            v = get_m(x, y)
+            if v == 0 or v > v0 + 1:
+                if x != x0 and y != y0 and abs(x - x0) + abs(y - y0) == 3:
+                    num = calc_move(x, y)
+                    if num > nmax:
+                        nmax = num
+                        xm = x
+                        ym = y
+    return nmax, xm, ym
 
 def clear_board():
     for x in range(1, xmax + 1):
@@ -9,14 +31,25 @@ def clear_board():
             elif v >= 0:
                 set(x, y, -9)
 
+# num moves from (x0, y0)
 def calc_land(x0, y0):
-    cnt = 0
+    num = 0
     for x in range(1, xmax + 1):
         for y in range(1, ymax + 1):
             if get(x, y) != -2:
                 if x != x0 and y != y0 and abs(x - x0) + abs(y - y0) == 3:
-                    cnt += 1
-    return cnt
+                    num += 1
+    return num
+
+# num moves from (x0, y0)
+def calc_move(x0, y0):
+    num = 0
+    for x in range(1, xmax + 1):
+        for y in range(1, ymax + 1):
+            if get_m(x, y) == 0:
+                if x != x0 and y != y0 and abs(x - x0) + abs(y - y0) == 3:
+                    num += 1
+    return num
 
 def set_land(x0, y0):
     cnt = 0
@@ -30,7 +63,7 @@ def set_land(x0, y0):
 
 # '*' if -2, 'X' if -1, '_' if 0 else n
 def draw_board():
-    cell_size = len(str(xmax * ymax))
+    cell_size = len(str(n_max))
     lpad = len(str(ymax))
     w = xmax * (cell_size + 1) + 3
     head = ' ' * lpad + '-' * w
@@ -62,6 +95,12 @@ def set(x, y, val):
 
 def get(x, y):
     return board[ymax - y][x - 1]
+
+def set_m(x, y, val):
+    moves[ymax - y][x - 1] = val
+
+def get_m(x, y):
+    return moves[ymax - y][x - 1]
 
 def matched(template, string):
     return re.match(template, string) is not None
@@ -100,13 +139,31 @@ def make_move():
         return False
     return True
 
+def solve_game(x0, y0, n):
+    if n == n_max or n == 0:
+        return n
+    set_m(x0, y0, n)
+    num, x1, y1 = best_move(x0, y0, n)
+    if num == 0:
+        # set_m(x0, y0, -1)
+        n -= 1
+        x1, y1 = get_xy(n)
+        n -= 1
+        if x1 == 0 or y1 == 0:
+            return n
+    return solve_game(x1, y1, n + 1)
+
+
 rexp = r"[1-9][0-9]? [1-9][0-9]?\Z"
 xmax, ymax = read_dim()
+n_max = xmax * ymax
 board = [[-9 for c in range(xmax)] for r in range(ymax)]
+moves = [[0 for c in range(xmax)] for r in range(ymax)]
 x0, y0 = 0, 0
 x0, y0 = read_pos("Enter the knight's starting position: ")
-is_game = make_move()
-cnt = 1
+
+is_game = False
+# is_game = make_move()
 
 while is_game:
     print()
@@ -115,5 +172,11 @@ while is_game:
     cnt += 1
     is_game = make_move()
 
-if cnt == xmax * ymax:
-    print("What a great tour! Congratulations!")
+# if cnt == n_max:
+#     print("What a great tour! Congratulations!")
+
+cnt = solve_game(x0, y0, 1)
+print(f"cnt = {cnt}")
+
+board = moves
+draw_board()
