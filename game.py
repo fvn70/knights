@@ -61,7 +61,6 @@ def set_land(x0, y0):
                     cnt += 1
     return cnt
 
-# '*' if -2, 'X' if -1, '_' if 0 else n
 def draw_board():
     cell_size = len(str(n_max))
     lpad = len(str(ymax))
@@ -77,30 +76,30 @@ def draw_board():
         row = f"{ymax - r}|".rjust(lpad + 1)
         print(row, end="")
         for c in range(xmax):
-            if board[r][c] == -9:
-                row = cell
-            elif board[r][c] == -1:
-                row = knight
-            elif board[r][c] == -2:
-                row = star
+            if bo[r][c] == -9:
+                row = cell          # '_'
+            elif bo[r][c] == -1:
+                row = knight        # 'X'
+            elif bo[r][c] == -2:
+                row = star          # '*'
             else:
-                row = ' ' * cell_size + str(board[r][c])
+                row = str(bo[r][c]).rjust(cell_size + 1)
             print(row, end="")
         print(" |")
     print(head)
     print(' ' * (lpad + 2) + ' '.join(bottom))
 
 def set(x, y, val):
-    board[ymax - y][x - 1] = val
+    bo[ymax - y][x - 1] = val
 
 def get(x, y):
-    return board[ymax - y][x - 1]
+    return bo[ymax - y][x - 1]
 
 def set_m(x, y, val):
-    moves[ymax - y][x - 1] = val
+    mo[ymax - y][x - 1] = val
 
 def get_m(x, y):
-    return moves[ymax - y][x - 1]
+    return mo[ymax - y][x - 1]
 
 def matched(template, string):
     return re.match(template, string) is not None
@@ -129,13 +128,21 @@ def read_dim():
         print("Invalid dimensions!")
     return map(int, cmd.split())
 
+def read_try():
+    while True:
+        cmd = input("Do you want to try the puzzle? (y/n): ")
+        if cmd in ('yn'):
+            break
+        print("Invalid input!")
+    return cmd == 'y'
+
 def make_move():
     set(x0, y0, -1)
     n = set_land(x0, y0)
     draw_board()
     if n == 0:
         print("\nNo more possible moves!")
-        print(f"Your knight visited {cnt} squares!")
+        print(f"Your knight visited {cnt_moves} squares!")
         return False
     return True
 
@@ -153,30 +160,84 @@ def solve_game(x0, y0, n):
             return n
     return solve_game(x1, y1, n + 1)
 
+def set_number(c, r, i):
+    mo[r][c] = i
+    done = try_next(c, r, i)
+    if not done:
+        mo[r][c] = 0
+    return done
+
+def try_next(x, y, i):
+
+    #eos - показывает все ли варианты возможных 8ми ходов мы рассмотрели
+    #done - показывает удачна ли данная ветка решения
+    #k - порядковый номер рассмотренной попытки из 8 допустимых
+    env = {'done': False, 'eos': False, 'r': y, 'c': x, 'r0': y, 'c0': x, 'k': -1}
+
+    def next():
+        x = env['c']
+        y = env['r']
+        if x != env['c0']:
+            x = env['c0']
+            y = env['r0']
+
+        while env['k'] < 8:
+            env['k'] += 1
+            if env['k'] < 8:
+                env['c'] = x + dx[env['k']]
+                env['r'] = y + dy[env['k']]
+            if (env['r'] >= 0 and env['r'] < ymax) \
+                    and (env['c'] >= 0 and env['c'] < xmax) \
+                    and mo[env['r']][env['c']] == 0:
+                break
+        env['eos'] = (env['k'] == 8)
+
+    if i < xmax * ymax:
+        next()
+        while not env['eos'] and not set_number(env['c'], env['r'], i + 1):
+            next()
+        done = not env['eos']
+    else:
+        done = True
+    return done
+
 
 rexp = r"[1-9][0-9]? [1-9][0-9]?\Z"
 xmax, ymax = read_dim()
 n_max = xmax * ymax
-board = [[-9 for c in range(xmax)] for r in range(ymax)]
-moves = [[0 for c in range(xmax)] for r in range(ymax)]
+bo = [[-9 for c in range(xmax)] for r in range(ymax)]
+mo = [[0 for c in range(xmax)] for r in range(ymax)]
 x0, y0 = 0, 0
+
+# Возможные ходы
+dx = [2, 1, -1, -2, -2, -1, 1, 2]
+dy = [1, 2, 2, 1, -1, -2, -2, -1]
+
 x0, y0 = read_pos("Enter the knight's starting position: ")
-
+mo[ymax - y0][x0 - 1] = 1
+is_found = try_next(x0 - 1, ymax - y0, 1)
 is_game = False
-# is_game = make_move()
 
-while is_game:
-    print()
-    x0, y0 = read_pos("Enter your next move: ")
-    clear_board()
-    cnt += 1
-    is_game = make_move()
+if read_try():
+    if is_found:
+        cnt_moves = 1
+        is_game = make_move()
 
-# if cnt == n_max:
-#     print("What a great tour! Congratulations!")
+        while is_game:
+            print()
+            x0, y0 = read_pos("Enter your next move: ")
+            clear_board()
+            cnt_moves += 1
+            is_game = make_move()
 
-cnt = solve_game(x0, y0, 1)
-print(f"cnt = {cnt}")
+        if cnt_moves == n_max:
+            print("What a great tour! Congratulations!")
+    else:
+        print("No solution exists!")
+elif not is_found:
+    print("No solution exists!")
+else:
+    print("\nHere's the solution!")
+    bo = mo
+    draw_board()
 
-board = moves
-draw_board()
