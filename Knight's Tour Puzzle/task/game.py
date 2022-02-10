@@ -9,7 +9,6 @@ def draw_board():
     cell = f" {'_' * cell_size}"
     bottom = [str(i+1).rjust(cell_size) for i in range(xmax)]
     knight = ' ' * cell_size + 'X'
-    move = ' ' * cell_size + 'O'
     print(head)
     for r in range(ymax):
         row = f"{ymax - r}|".rjust(lpad + 1)
@@ -17,8 +16,8 @@ def draw_board():
         for c in range(xmax):
             if board[r][c] == 'X':
                 row = knight
-            elif board[r][c] == 'O':
-                row = move
+            elif board[r][c] != '_':
+                row = ' ' * cell_size + board[r][c]
             else:
                 row = cell
             print(row, end="")
@@ -27,12 +26,24 @@ def draw_board():
     print(' ' * (lpad + 2) + ' '.join(bottom))
 
 
+def calc_moves(x0, y0):
+    cnt = -1
+    for move in moves:
+        x = x0 + move[0]
+        y = y0 + move[1]
+        if x in range(1, xmax + 1) and y in range(1, ymax + 1):
+            cnt += 1
+    return cnt
+
+
 def find_moves():
     for move in moves:
         x = x0 + move[0]
         y = y0 + move[1]
         if x in range(1, xmax + 1) and y in range(1, ymax + 1):
-            board[ymax - y][x - 1] = 'O'
+            cnt = calc_moves(x, y)
+            if cnt > 0:
+                board[ymax - y][x - 1] = str(cnt)
 
 
 def read_dim():
