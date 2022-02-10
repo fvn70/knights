@@ -4,18 +4,34 @@ import re
 def draw_board():
     cell_size = len(str(xmax * ymax))
     lpad = len(str(ymax))
-    w = xmax * cell_size + 3
+    w = xmax * (cell_size + 1) + 3
     head = ' ' * lpad + '-' * w
-    bottom = [str(i+1) for i in range(xmax)]
+    cell = f" {'_' * cell_size}"
+    bottom = [str(i+1).rjust(cell_size) for i in range(xmax)]
+    knight = ' ' * cell_size + 'X'
     print(head)
     for r in range(ymax):
         row = f"{ymax - r}|".rjust(lpad + 1)
         print(row, end="")
         for c in range(xmax):
-            print(f" {board[r][c]}", end="")
+            if board[r][c] == 'X':
+                row = knight
+            else:
+                row = cell
+            print(row, end="")
         print(" |")
     print(head)
-    print('   ' + ' '.join(bottom))
+    print(' ' * (lpad + 2) + ' '.join(bottom))
+
+
+def read_dim():
+    while True:
+        cmd = input("Enter your board dimensions: ")
+        if cmd and re.match(rexp, cmd) is not None:
+            break
+        print("Invalid dimensions!")
+    return map(int, cmd.split())
+
 
 def read_pos(msg):
     is_move = 'move' in msg
@@ -35,7 +51,7 @@ def read_pos(msg):
 
 
 rexp = r"[1-9][0-9]? [1-9][0-9]?\Z"
-xmax, ymax = 8, 8
+xmax, ymax = read_dim()
 board = [['_' for c in range(xmax)] for r in range(ymax)]
 x0, y0 = 0, 0
 x0, y0 = read_pos("Enter the knight's starting position: ")
