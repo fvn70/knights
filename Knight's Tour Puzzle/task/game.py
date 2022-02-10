@@ -26,25 +26,46 @@ def draw_board():
     print(' ' * (lpad + 2) + ' '.join(bottom))
 
 
+def set(x, y, val):
+    board[ymax - y][x - 1] = val
+
+
+def get(x, y):
+    return board[ymax - y][x - 1]
+
+
+def clear_board():
+    for x in range(1, xmax + 1):
+        for y in range(1, ymax + 1):
+            v = get(x, y)
+            if v == 'X':
+                set(x, y, '*')
+            elif v != '*':
+                set(x, y, '_')
+
+
 def calc_moves(x0, y0):
     cnt = -1
     for move in moves:
         x = x0 + move[0]
         y = y0 + move[1]
         if x in range(1, xmax + 1) and y in range(1, ymax + 1):
-            cnt += 1
+            if get(x, y) != '*':
+                cnt += 1
     return cnt
 
 
 def find_moves():
+    cnt = 0
     for move in moves:
         x = x0 + move[0]
         y = y0 + move[1]
         if x in range(1, xmax + 1) and y in range(1, ymax + 1):
-            cnt = calc_moves(x, y)
-            if cnt > 0:
-                board[ymax - y][x - 1] = str(cnt)
-
+            if get(x, y) != '*':
+                num = calc_moves(x, y)
+                set(x, y, str(num))
+                cnt += 1
+    return cnt
 
 def read_dim():
     while True:
@@ -72,13 +93,31 @@ def read_pos(msg):
     return x, y
 
 
+def make_move():
+    set(x0, y0, 'X')
+    n = find_moves()
+    draw_board()
+    if n == 0:
+        print("\nNo more possible moves!")
+        print(f"Your knight visited {cnt_pos} squares!")
+        return False
+    return True
+
+
 moves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]
 rexp = r"[1-9][0-9]? [1-9][0-9]?\Z"
 xmax, ymax = read_dim()
 board = [['_' for c in range(xmax)] for r in range(ymax)]
 x0, y0 = 0, 0
 x0, y0 = read_pos("Enter the knight's starting position: ")
-board[ymax - y0][x0 - 1] = 'X'
-find_moves()
-print("\nHere are the possible moves:")
-draw_board()
+cnt_pos = 1
+is_game = make_move()
+
+while is_game:
+    x0, y0 = read_pos("\nEnter your next move: ")
+    clear_board()
+    cnt_pos += 1
+    is_game = make_move()
+
+if cnt_pos == xmax * ymax:
+    print("What a great tour! Congratulations!")
